@@ -1,0 +1,692 @@
+       IDENTIFICATION DIVISION.                                                 
+SIGV2M* CHANGED PROGRAM-ID OLD PROGRAM-ID = 'OPC00001'                          
+       PROGRAM-ID.           MV7219.                                            
+       INSTALLATION.         MOTOR VEHICLE DEPARTMENT.                          
+       AUTHOR.               BONNIE WETMORE.                                    
+       DATE-WRITTEN.         08/16/91.                                          
+       DATE-COMPILED.                                                           
+SIGV2M******************************************************************00010000
+SIGV2M*      CONVERTED FROM VSE TO MVS BY                               00020000
+SIGV2M*       STONIER INFORMATION GROUP                                 00030000
+SIGV2M*        DAVID FILEGER - 04/99                                    00040001
+SIGV2M******************************************************************00050000
+SIGV2M*REMARKS.                                                                 
+SIGV2M*        OPC00001 IS A CICS SECURITY PROGRAM.                             
+SIGV2M*                                                                         
+SIGV2M*             TITLE=  SECURITY MENU PROGRAM                               
+SIGV2M*        PROGRAM ID=  OPC00001                                            
+SIGV2M*           TRAN ID=  OC01                                                
+SIGV2M*         MAPSET ID=  OC01MAP                                             
+SIGV2M*            MAP ID=  OC01S01                                             
+SIGV2M*                                                                         
+SIGV2M*        INPUT FILE=  PASSWORD 2 FILE                                     
+SIGV2M*          XCTL PGM=  OPC00002                                            
+SIGV2M*                                                                         
+SIGV2M*    MODIFICATION HISTORY:                                                
+SIGV2M*****************************************************************         
+SIGV2M*    PROGRAMMER        DATE                CHANGE                         
+SIGV2M*    B. BROWN         11/28/05    RESTRICT ACCESS TO RESTORATION          
+      *                                 SYSTEM BASED ON A USER'S                
+      *                                 PASSWORD INFO.                          
+SIGV2M*****************************************************************         
+       EJECT                                                                    
+       ENVIRONMENT DIVISION.                                                    
+       DATA DIVISION.                                                           
+       WORKING-STORAGE SECTION.                                                 
+       01  FILLER    PIC X(40)  VALUE 'WORKING STORAGE BEGINS HERE'.            
+SIGV2M*    COPY DFHAID.                                                         
+SIGV2M     COPY DFHAID.                                                         
+      *    THIS COPY BOOK IS FOR BASIC MAPPING SUPPORT ATTRIBUTES     *         
+SIGV2M*    COPY DFHBMSCA.                                                       
+SIGV2M     COPY DFHBMSCA.                                                       
+                                                                                
+SIGV2M*    COPY OC01MAP.                                                        
+SIGV2M     COPY MX01MAP.                                                        
+       EJECT                                                                    
+       01  FIELD-ATTRIBUTE-DEFINITIONS.                                         
+           05  FA-UNPROT               PIC X VALUE ' '.                         
+           05  FA-UNPROT-FSET          PIC X VALUE 'A'.                         
+           05  FA-UNPROT-BRT           PIC X VALUE 'H'.                         
+           05  FA-UNPROT-BRT-FSET      PIC X VALUE 'I'.                         
+           05  FA-UNPROT-DARK          PIC X VALUE '<'.                         
+           05  FA-UNPROT-DARK-FSET     PIC X VALUE '('.                         
+           05  FA-UNPROT-NUM           PIC X VALUE '&'.                         
+           05  FA-UNPROT-NUM-FSET      PIC X VALUE 'J'.                         
+           05  FA-UNPROT-NUM-BRT       PIC X VALUE 'Q'.                         
+           05  FA-UNPROT-NUM-BRT-FSET  PIC X VALUE 'R'.                         
+           05  FA-UNPROT-NUM-DARK      PIC X VALUE '*'.                         
+           05  FA-UNPROT-NUM-DARK-FSET PIC X VALUE ')'.                         
+           05  FA-PROT                 PIC X VALUE '-'.                         
+           05  FA-PROT-FSET            PIC X VALUE '/'.                         
+           05  FA-PROT-BRT             PIC X VALUE 'Y'.                         
+           05  FA-PROT-BRT-FSET        PIC X VALUE 'Z'.                         
+           05  FA-PROT-DARK            PIC X VALUE '%'.                         
+           05  FA-PROT-DARK-FSET       PIC X VALUE '}'.                         
+           05  FA-PROT-SKIP            PIC X VALUE '0'.                         
+           05  FA-PROT-SKIP-FSET       PIC X VALUE '1'.                         
+           05  FA-PROT-SKIP-BRT        PIC X VALUE '8'.                         
+           05  FA-PROT-SKIP-BRT-FSET   PIC X VALUE '9'.                         
+           05  FA-PROT-SKIP-DARK       PIC X VALUE '@'.                         
+           05  FA-PROT-SKIP-DARK-FSET  PIC X VALUE QUOTE.                       
+                                                                                
+       EJECT                                                                    
+       01  WS10-CONSTANT-VALUES.                                                
+           02  CURSOR-WS10                       PIC S9    VALUE -1.            
+           02  PROGRAM-WS10                      PIC X(8).                      
+                                                                                
+                                                                                
+       01  WS80-ERROR-MESSAGES.                                                 
+           05  INVALID-PASSWORD-WS80        PIC X(40)     VALUE                 
+           '***        INVALID PASSWORD          ***'.                          
+           05  INVALID-ANALYST-CODE-WS80    PIC X(40)     VALUE                 
+           '***      INVALID ANALYST CODE        ***'.                          
+           05  INVALID-PF-PA-KEY-WS80       PIC X(40)     VALUE                 
+           '***        INVALID PF/PA KEY         ***'.                          
+           05  FILE-NOT-OPEN-WS80           PIC X(56)     VALUE                 
+           '*** MVPSWD2 FILE NOT OPEN - NOTIFY DATA PROCESSING ***  '.          
+           05  PGMIDERR-WS80                PIC X(56)     VALUE                 
+           '*** PGMIDERR - NOTIFY DATA PROCESSING ***               '.          
+           05  LENGTH-ERROR-WS80            PIC X(56)     VALUE                 
+           '*** LENGTH ERROR - NOTIFY DATA PROCESSING ***           '.          
+           05  GENERAL-ERROR-WS80           PIC X(56)     VALUE                 
+           '*** GENERAL ERROR - NOTIFY DATA PROCESSING ***          '.          
+           05  INVALID-ACCESS-WS80          PIC X(56)     VALUE                 
+           '* USER UNAUTHORIZED TO ACCESS DRIVER HIST CORR SYSTEM * '.          
+           05  NO-MORE-TRIES-WS80           PIC X(56)     VALUE                 
+           '* USER CANNOT ACCESS DRIVER HISTORY CORRECTION SYSTEM * '.          
+           05  OUT-MSG-WS80.                                                    
+               10  FILLER                   PIC X(12).                          
+               10  OUT-ERR-MSG-WS80         PIC X(56).                          
+       EJECT                                                                    
+       01  WS85-LENGTHS.                                                        
+           05  COMMAREA-LENGTH-WS85         PIC S9(4) COMP VALUE +0203.         
+           05  XCTL-LENGTH-WS85             PIC S9(4) COMP VALUE +0203.         
+           05  ERROR-MSG-LENGTH-WS85        PIC S9(4) COMP VALUE +0068.         
+           05  PSWD-LENGTH-WS85             PIC S9(4) COMP VALUE +0120.         
+           05  EIBCALEN-WS85                PIC S9(4).                          
+               88  FIRST-TIME-THRU-WS85                    VALUE +0000.         
+                                                                                
+                                                                                
+       01  WS90-COMMAREA.                                                       
+           02  CA-SCREEN-NO-WS90                PIC X(7).                       
+SIGV2M*        88  OC01S01-SCREEN-WS90               VALUE 'OC01S01'.           
+SIGV2M         88  OC01S01-SCREEN-WS90               VALUE 'MX01S01'.           
+SIGV2M*        88  PF3-SCREEN-WS90                   VALUE 'OC02S01'.           
+SIGV2M         88  PF3-SCREEN-WS90                   VALUE 'MX02S01'.           
+SIGV2M         88  PF3-SCREEN-WS95                   VALUE 'MX04S01'            
+           'MX05S01' 'MX06S01' 'MX07S01' 'MX08S01' 'MX09S01' 'MX10S01'          
+           'MX11S01' 'MX12S01' 'MX13S01' 'MX14S01' 'MX15S01' 'MX16S01'          
+           'MX17S01' 'MX18S01' 'MX19S01' 'MX20S01' 'MX21S01' 'MX22S01'          
+           'MX23S01' 'MX24S01' 'MX25S01' 'MX26S01' 'MX27S01' 'MX29S01'.         
+           02  CA-ANALYST-ID-WS90               PIC X(3).                       
+           02  CA-PSWD-WS90                     PIC X(3).                       
+           02  CA-PSWRD-NO-OF-TRY-CTR-WS90      PIC 9(1).                       
+           02  FILLER                           PIC X(188).                     
+           02  CA-ADD-RSTR-WS90                 PIC X(1).                       
+SIGV2M         88  ADD-RSTR-WS90                     VALUE '0'.                 
+      ************************************************************              
+       01  FILLER    PIC X(40)  VALUE 'WORKING STORAGE ENDS HERE'.              
+       EJECT 
+DELOITTE** ADDED THE WORKING STORAGE VARIABLES FOR PROGRAM MV7220 BELOW	   
+004500     COPY MX02MAP.  
+007400 01  WS10-CONSTANTS.                                              
+007500     02  CURSOR-WS10                       PIC S9    VALUE -1.    
+007600     02  PROGRAM-WS10                      PIC X(8).              
+007700                                                                  
+007800 01  WS10-COMMAREA.                                               
+007900     05  CA-SCREEN-WS10               PIC X(07) VALUE 'MW54S01'.  
+008000     05  CA-ANALYST-ID-WS10           PIC X(3).                   
+008100     05  CA-PSWD-WS10                 PIC X(3).                   
+008200     05  CA-PSWD-NO-TRIES-WS10        PIC 9     VALUE 0.          
+008300                                                                  
+008000 01  WS70-ERROR-MESSAGES.                                         
+008100     05  INVALID-PF-PA-KEY-WS70       PIC X(40)  VALUE            
+008200     '      ***  INVALID PF KEY ***           '.                  
+008300     05  INCORRECT-INFO-WS70          PIC X(40)  VALUE            
+008400     '***  INCORRECT INFORMATION KEYED IN  ***'.                  
+008500     05  INCORRECT-LIC-NO             PIC X(40)  VALUE            
+008600     '***  LICENSE NUMBER MUST BE ENTERED  ***'.                  
+008700     05  PGMIDERR-WS70                PIC X(46)  VALUE            
+008800     '*** PGMIDERR - NOTIFY DATA PROCESSING ***     '.            
+008900     05  LENGTH-ERROR-WS70            PIC X(46)  VALUE            
+009000     '*** LENGTH ERROR - NOTIFY DATA PROCESSING *** '.            
+009100     05  GENERAL-ERROR-WS70           PIC X(46)  VALUE            
+009200     '*** GENERAL ERROR - NOTIFY DATA PROCESSING ***'.            
+009300     05  OUT-MSG-WS70.                                            
+009400         10  FILLER                   PIC X(12).                  
+009500         10  OUT-ERR-MSG-WS70         PIC X(46).                  
+009600                                                                  
+009700 01  WS80-LENGTHS.                                                
+009800     05  COMMAREA-LENGTH-WS80         PIC S9(4) COMP VALUE +0203. 
+009900     05  ERROR-MSG-LENGTH-WS80        PIC S9(4) COMP VALUE +0058. 
+010000     05  EIBCALEN-WS80                PIC S9(4) COMP.             
+010100 EJECT                                                            
+010200 01  WS90-COMMAREA.                                               
+010300     02  CA-SCREEN-NO-WS90              PIC X(7).                 
+010400         88  OC01S01-SCREEN-WS90                VALUE 'MX01S01'.  
+010500         88  OC02S01-SCREEN-WS90                VALUE 'MX02S01'.  
+010600         88  PF3-SCREEN-WS90                    VALUE 'MX03S01'   
+010700             'MX04S01' 'MX05S01'.                                 
+010800         88  PF1-SCREEN-WS90                    VALUE 'MX03S01'   
+010900             'MX04S01' 'MX05S01' 'MX06S01' 'MX07S01'  'MX08S01'   
+011000             'MX09S01' 'MX10S01' 'MX11S01' 'MX12S01'  'MX13S01'   
+011100             'MX14S01' 'MX15S01' 'MX16S01' 'MX17S01'  'MX18S01'   
+011200             'MX19S01' 'MX20S01' 'MX21S01' 'MX22S01'  'MX23S01'   
+011300             'MX24S01' 'MX27S01' 'MX29S01'.                       
+011400     02  CA-ANALYST-ID-WS90             PIC X(3).                 
+011500     02  CA-PSWD-WS90                   PIC X(3).                 
+011600     02  FILLER                         PIC X(189).               
+011700     02  CA-ADD-RSTR-WS90                 PIC X(1).               
+011800         88  ADD-RSTR-WS90                     VALUE '0'.         
+011900                                                                  
+012000 01  MW7220-COMMAREA.                                             
+012100     02  MW7220-LIC-NO                  PIC X(27) VALUE SPACES.   
+012200     02  MW7220-ID                      PIC X(03) VALUE SPACES.   
+012300     02  MW7220-PW                      PIC X(03) VALUE SPACES.   
+012400     02  MW7220-RET-MSG                 PIC X(40) VALUE SPACES.   
+012500                                                                  
+012600 01  FILLER    PIC X(40)  VALUE 'WORKING STORAGE ENDS HERE'.      
+012700 EJECT                                                                                                          
+
+
+
+
+       LINKAGE SECTION.                                                         
+       EJECT                                                                    
+       01  DFHCOMMAREA                        PIC X(203).                       
+                                                                                
+SIGV2M*01  LINKAGE-POINTERS.                                                    
+SIGV2M*    02  FILLER                         PIC S9(8) COMP.                   
+SIGV2M*    02  PSWD-POINTER                   PIC S9(8) COMP.                   
+       EJECT                                                                    
+       01  MVPSWD2-FILE.                                                        
+           02  PSWD-FIRST-NAME                PIC X(9).                         
+           02  PSWD-INIT                      PIC X(1).                         
+           02  PSWD-LAST-NAME                 PIC X(15).                        
+           02  PSWD-ANALYST-CODE              PIC X(3).                         
+           02  PSWD-PASSWORD                  PIC X(3).                         
+           02  PSWD-PS-ACCESS-CODE            PIC X(1).                         
+           02  PSWD-PS-ACCESS-DATE            PIC X(6).                         
+           02  PSWD-CDL-ACCESS-CODE           PIC X(1).                         
+           02  PSWD-CDL-ACCESS-DATE           PIC X(6).                         
+           02  PSWD-HIST-ACCESS-CODE          PIC X(1).                         
+           02  PSWD-HIST-ACCESS-DATE          PIC X(6).                         
+           02  PSWD-REST-ACCESS-CODE          PIC X(1).                         
+           02  PSWD-REST-ACCESS-DATE          PIC X(6).                         
+           02  PSWD-CORR-ACCESS-CODE          PIC X(1).                         
+               88  VALID-CORR-ACCESS             VALUE '0' '1' '2' '3'.         
+           02  PSWD-CORR-ACCESS-DATE          PIC X(6).                         
+           02  FILLER                         PIC X(54).                        
+       EJECT                                                                    
+       PROCEDURE DIVISION.                                                      
+       000-HANDLES.                                                             
+           EXEC CICS HANDLE CONDITION                                           
+                     NOTOPEN(902-NOTOPEN) PGMIDERR(903-PGMIDERR)                
+                     LENGERR(904-LENGERR) ERROR(905-GENERAL-ERROR)              
+                     END-EXEC.                                                  
+                                                                                
+       010-ENTRY.                                                               
+                                                                                
+           MOVE DFHCOMMAREA  TO WS90-COMMAREA.                                  
+                                                                                
+           IF EIBAID IS EQUAL TO DFHCLEAR                                       
+              GO TO 920-EXIT-BY-CLEAR.                                          
+                                                                                
+           IF EIBAID IS EQUAL TO DFHENTER                                       
+              GO TO 020-CHECK-EIBCALEN.                                         
+                                                                                
+                                                                                
+           IF EIBAID IS EQUAL TO DFHPF3                                         
+           IF OC01S01-SCREEN-WS90                                               
+SIGV2M           MOVE LOW-VALUES  TO  MX01S01I                                  
+                 MOVE 0 TO CA-PSWRD-NO-OF-TRY-CTR-WS90                          
+                 GO TO 930-SEND-S01-MAP.                                        
+                                                                                
+           IF EIBAID IS EQUAL TO DFHPF3                                         
+              IF PF3-SCREEN-WS95                                                
+SIGV2M           MOVE LOW-VALUES  TO  MX01S01I                                  
+                 MOVE 0 TO CA-PSWRD-NO-OF-TRY-CTR-WS90                          
+                 GO TO 930-SEND-S01-MAP.                                        
+                                                                                
+           IF EIBAID IS EQUAL TO DFHPF3                                         
+              IF PF3-SCREEN-WS90                                                
+SIGV2M*          MOVE LOW-VALUES  TO  OC01S01I                                  
+SIGV2M           MOVE LOW-VALUES  TO  MX01S01I                                  
+                 MOVE 0 TO CA-PSWRD-NO-OF-TRY-CTR-WS90                          
+                 GO TO 930-SEND-S01-MAP.                                        
+                                                                                
+           IF EIBAID IS EQUAL TO DFHPF1                                         
+           IF OC01S01-SCREEN-WS90                                               
+SIGV2M           MOVE LOW-VALUES  TO  MX01S01I                                  
+                 MOVE 0 TO CA-PSWRD-NO-OF-TRY-CTR-WS90                          
+                 GO TO 930-SEND-S01-MAP.                                        
+                                                                                
+           IF EIBAID IS EQUAL TO DFHPF1                                         
+              IF PF3-SCREEN-WS95                                                
+SIGV2M           MOVE LOW-VALUES  TO  MX01S01I                                  
+                 MOVE 0 TO CA-PSWRD-NO-OF-TRY-CTR-WS90                          
+                 GO TO 930-SEND-S01-MAP.                                        
+                                                                                
+           IF EIBAID IS EQUAL TO DFHPF2                                         
+           IF OC01S01-SCREEN-WS90                                               
+SIGV2M           MOVE LOW-VALUES  TO  MX01S01I                                  
+                 MOVE 0 TO CA-PSWRD-NO-OF-TRY-CTR-WS90                          
+                 GO TO 930-SEND-S01-MAP.                                        
+                                                                                
+           IF EIBAID IS EQUAL TO DFHPF2                                         
+              IF PF3-SCREEN-WS95                                                
+SIGV2M           MOVE LOW-VALUES  TO  MX01S01I                                  
+                 MOVE 0 TO CA-PSWRD-NO-OF-TRY-CTR-WS90                          
+                 GO TO 930-SEND-S01-MAP.                                        
+                                                                                
+           IF EIBAID IS EQUAL TO DFHPA1 OR DFHPA2 OR DFHPA3                     
+              MOVE CURSOR-WS10 TO S01-ANALYST-ID-L                              
+              MOVE INVALID-PF-PA-KEY-WS80 TO S01-MSG-AREA-I                     
+              GO TO 935-SEND-EDIT-S01-MAP.                                      
+                                                                                
+           GO TO 900-INVALID-PF-KEY.                                            
+       EJECT                                                                    
+       020-CHECK-EIBCALEN.                                                      
+           MOVE EIBCALEN TO EIBCALEN-WS85.                                      
+           IF FIRST-TIME-THRU-WS85                                              
+SIGV2M*       MOVE LOW-VALUES  TO  OC01S01I                                     
+SIGV2M        MOVE LOW-VALUES  TO  MX01S01I                                     
+              MOVE 0 TO CA-PSWRD-NO-OF-TRY-CTR-WS90                             
+              GO TO 930-SEND-S01-MAP.                                           
+                                                                                
+           IF OC01S01-SCREEN-WS90                                               
+              GO TO 100-RECEIVE-AND-EDIT-MAP.                                   
+                                                                                
+           IF PF3-SCREEN-WS95                                                   
+                 MOVE LOW-VALUES  TO  MX01S01I                                  
+                 MOVE 0 TO CA-PSWRD-NO-OF-TRY-CTR-WS90                          
+                 GO TO 930-SEND-S01-MAP.                                        
+                                                                                
+           GO TO 905-GENERAL-ERROR.                                             
+       EJECT                                                                    
+       100-RECEIVE-AND-EDIT-MAP.                                                
+SIGV2M** CHANGED CICS MAP OLD MAP NAME = 'OC01S01'                              
+SIGV2M** CHANGED CICS MAPSET OLD MAPSET NAME = 'OC01MAP'                        
+           EXEC CICS RECEIVE MAP ('MX01S01')                                    
+                     MAPSET('MX01MAP')                                          
+                     END-EXEC.                                                  
+                                                                                
+                                                                                
+           GO TO 110-EDIT-PASSWORD-INFO.                                        
+       EJECT                                                                    
+       110-EDIT-PASSWORD-INFO.                                                  
+SIGV2M     EXEC CICS GETMAIN SET(ADDRESS OF MVPSWD2-FILE)                       
+                     LENGTH(PSWD-LENGTH-WS85)                                   
+                     END-EXEC.                                                  
+                                                                                
+           MOVE S01-PSWD-I TO PSWD-PASSWORD.                                    
+                                                                                
+           EXEC CICS HANDLE CONDITION                                           
+                     NOTFND(115-CHECK-NO-PSWD-TRYS)                             
+                     END-EXEC.                                                  
+                                                                                
+           EXEC CICS READ DATASET('MVPSWD2')                                    
+                     RIDFLD(PSWD-PASSWORD)                                      
+SIGV2M               SET(ADDRESS OF MVPSWD2-FILE)                               
+                     EQUAL                                                      
+                     END-EXEC.                                                  
+                                                                                
+           IF PSWD-CORR-ACCESS-CODE = '0'                                       
+              MOVE '0' TO CA-ADD-RSTR-WS90.                                     
+                                                                                
+           IF S01-ANALYST-ID-I IS NOT EQUAL TO PSWD-ANALYST-CODE                
+              ADD 1 TO CA-PSWRD-NO-OF-TRY-CTR-WS90                              
+              IF CA-PSWRD-NO-OF-TRY-CTR-WS90 IS GREATER THAN 3                  
+                 GO TO 850-NO-MORE-TRIES                                        
+              ELSE                                                              
+                 MOVE INVALID-ANALYST-CODE-WS80 TO S01-MSG-AREA-I               
+                 MOVE LOW-VALUES TO S01-ANALYST-ID-I                            
+                 MOVE CURSOR-WS10 TO S01-ANALYST-ID-L                           
+                 MOVE FA-UNPROT-DARK-FSET TO S01-PSWD-F                         
+                 MOVE FA-UNPROT-DARK-FSET TO S01-ANALYST-ID-F                   
+                 GO TO 935-SEND-EDIT-S01-MAP.                                   
+                                                                                
+           IF NOT VALID-CORR-ACCESS                                             
+              GO TO 906-INVALID-ACCESS.                                         
+                                                                                
+           MOVE S01-PSWD-I TO CA-PSWD-WS90.                                     
+           MOVE S01-ANALYST-ID-I TO CA-ANALYST-ID-WS90.                         
+SIGV2M*    MOVE 'OPC00002' TO PROGRAM-WS10.                                     
+SIGV2M     MOVE 'MV7220  ' TO PROGRAM-WS10.
+DELOITTE** CALLING PROGRAM MV7220
+           GO TO 10000-CALL-MV7220-MX02-PROGRAM.                                     
+           GO TO 800-XCTL.                                                      
+         EJECT                                                                  
+         115-CHECK-NO-PSWD-TRYS.                                                
+           ADD 1 TO CA-PSWRD-NO-OF-TRY-CTR-WS90.                                
+                                                                                
+           IF CA-PSWRD-NO-OF-TRY-CTR-WS90 IS GREATER THAN 3                     
+              GO TO 850-NO-MORE-TRIES                                           
+           ELSE                                                                 
+              MOVE INVALID-PASSWORD-WS80 TO S01-MSG-AREA-I                      
+              MOVE LOW-VALUES TO S01-PSWD-I                                     
+              MOVE CURSOR-WS10 TO S01-PSWD-L                                    
+              MOVE FA-UNPROT-DARK-FSET TO S01-PSWD-F, S01-ANALYST-ID-F          
+              GO TO 935-SEND-EDIT-S01-MAP.                                      
+       EJECT                                                                    
+       800-XCTL.                                                                
+           EXEC CICS XCTL PROGRAM(PROGRAM-WS10)                                 
+                     COMMAREA(WS90-COMMAREA)                                    
+                     LENGTH(XCTL-LENGTH-WS85)                                   
+                     END-EXEC.                                                  
+                                                                                
+                                                                                
+                                                                                
+       850-NO-MORE-TRIES.                                                       
+           MOVE NO-MORE-TRIES-WS80 TO OUT-ERR-MSG-WS80.                         
+           GO TO 925-SEND-ERR-MSG.                                              
+       EJECT                                                                    
+       900-INVALID-PF-KEY.                                                      
+SIGV2M** CHANGED CICS MAP OLD MAP NAME = 'OC01S01'                              
+SIGV2M** CHANGED CICS MAPSET OLD MAPSET NAME = 'OC01MAP'                        
+           EXEC CICS RECEIVE MAP ('MX01S01')                                    
+                     MAPSET('MX01MAP')                                          
+                     END-EXEC.                                                  
+SIGV2M*    MOVE 'OC01S01' TO CA-SCREEN-NO-WS90.                                 
+SIGV2M     MOVE 'MX01S01' TO CA-SCREEN-NO-WS90.                                 
+           MOVE INVALID-PF-PA-KEY-WS80 TO S01-MSG-AREA-I.                       
+           GO TO 935-SEND-EDIT-S01-MAP.                                         
+                                                                                
+       EJECT                                                                    
+       902-NOTOPEN.                                                             
+           MOVE FILE-NOT-OPEN-WS80 TO OUT-ERR-MSG-WS80.                         
+           GO TO 925-SEND-ERR-MSG.                                              
+                                                                                
+                                                                                
+                                                                                
+       903-PGMIDERR.                                                            
+           MOVE PGMIDERR-WS80 TO OUT-ERR-MSG-WS80.                              
+           GO TO 925-SEND-ERR-MSG.                                              
+                                                                                
+                                                                                
+                                                                                
+       904-LENGERR.                                                             
+           MOVE LENGTH-ERROR-WS80 TO OUT-ERR-MSG-WS80.                          
+           GO TO 925-SEND-ERR-MSG.                                              
+                                                                                
+                                                                                
+                                                                                
+       905-GENERAL-ERROR.                                                       
+           MOVE GENERAL-ERROR-WS80 TO OUT-ERR-MSG-WS80.                         
+           GO TO 925-SEND-ERR-MSG.                                              
+                                                                                
+                                                                                
+                                                                                
+       906-INVALID-ACCESS.                                                      
+           MOVE INVALID-ACCESS-WS80 TO OUT-ERR-MSG-WS80.                        
+           GO TO 925-SEND-ERR-MSG.                                              
+                                                                                
+                                                                                
+                                                                                
+       920-EXIT-BY-CLEAR.                                                       
+           MOVE LOW-VALUES TO OUT-ERR-MSG-WS80.                                 
+           GO TO 925-SEND-ERR-MSG.                                              
+       EJECT                                                                    
+       925-SEND-ERR-MSG.                                                        
+           EXEC CICS SEND FROM (OUT-MSG-WS80)                                   
+                     LENGTH(ERROR-MSG-LENGTH-WS85)                              
+                     ERASE                                                      
+                     END-EXEC.                                                  
+           GO TO 999-RETURN.                                                    
+       EJECT                                                                    
+       930-SEND-S01-MAP.                                                        
+SIGV2M*    MOVE 'OC01S01' TO CA-SCREEN-NO-WS90.                                 
+SIGV2M     MOVE 'MX01S01' TO CA-SCREEN-NO-WS90.                                 
+                                                                                
+SIGV2M** CHANGED CICS MAP OLD MAP NAME = 'OC01S01'                              
+SIGV2M** CHANGED CICS MAPSET OLD MAPSET NAME = 'OC01MAP'                        
+           EXEC CICS SEND MAP('MX01S01')                                        
+                     MAPSET('MX01MAP')                                          
+                     ERASE                                                      
+                     END-EXEC.                                                  
+                                                                                
+                                                                                
+           GO TO 998-RETURN-TRANSID.                                            
+       EJECT                                                                    
+       935-SEND-EDIT-S01-MAP.                                                   
+SIGV2M*    MOVE 'OC01S01' TO CA-SCREEN-NO-WS90.                                 
+SIGV2M     MOVE 'MX01S01' TO CA-SCREEN-NO-WS90.                                 
+                                                                                
+SIGV2M** CHANGED CICS MAP OLD MAP NAME = 'OC01S01'                              
+SIGV2M** CHANGED CICS MAPSET OLD MAPSET NAME = 'OC01MAP'                        
+           EXEC CICS SEND MAP('MX01S01')                                        
+                     MAPSET('MX01MAP')                                          
+                     CURSOR                                                     
+                     END-EXEC.                                                  
+                                                                                
+                                                                                
+           GO TO 998-RETURN-TRANSID.                                            
+       EJECT                                                                    
+       998-RETURN-TRANSID.                                                      
+                                                                                
+SIGV2M*    EXEC CICS RETURN TRANSID('OC01')                                     
+SIGV2M     EXEC CICS RETURN TRANSID('MX01')                                     
+                     COMMAREA(WS90-COMMAREA)                                    
+                     LENGTH(COMMAREA-LENGTH-WS85)                               
+                     END-EXEC.                                                  
+           GOBACK.                                                              
+                                                                                
+                                                                                
+                                                                                
+       999-RETURN.                                                              
+                                                                                
+           EXEC CICS RETURN                                                     
+                     END-EXEC.                                                  
+           GOBACK. 
+DELOITTE**THE HIGHLITED PORTION CONTAINS ALL THE FUNCTIONALITIES
+DELOITTE**UNDER THE PROGRAM MV7220-MX02
+       10000-CALL-MV7220-MX02-PROGRAM.		   
+013600 000-HANDLES.                                                     
+013700     EXEC CICS HANDLE CONDITION ERROR(905-GENERAL-ERROR)          
+013800               PGMIDERR(903-PGMIDERR) LENGERR(904-LENGERR)        
+013900               END-EXEC.                                          
+014000                                                                  
+014100 010-ENTRY.                                                       
+014200     MOVE DFHCOMMAREA  TO WS90-COMMAREA.                          
+014300                                                                  
+014400     IF EIBAID IS EQUAL TO DFHCLEAR                               
+014500        GO TO 920-EXIT-BY-CLEAR.                                  
+014600                                                                  
+017100     IF EIBAID IS EQUAL TO DFHPF9                                 
+017200        MOVE CA-ANALYST-ID-WS90 TO CA-ANALYST-ID-WS10             
+017300        MOVE CA-PSWD-WS90       TO CA-PSWD-WS10                   
+017400        EXEC CICS XCTL                                            
+017500                  PROGRAM  ('MV7187')                             
+017600                  COMMAREA (WS10-COMMAREA)                        
+017700                  LENGTH   (LENGTH OF WS10-COMMAREA)              
+017800                  END-EXEC.                                       
+017900                                                                  
+014700     IF EIBAID IS EQUAL TO DFHPF3                                 
+014800     IF ADD-RSTR-WS90                                             
+014900           MOVE LOW-VALUES  TO  MX02S01I                          
+015000           GO TO 940-SEND-S01-MAP.                                
+015100                                                                  
+015200     IF EIBAID IS EQUAL TO DFHPF3                                 
+015300        IF PF3-SCREEN-WS90                                        
+015400*          MOVE LOW-VALUES  TO  OC02S01I                          
+015500           MOVE LOW-VALUES  TO  MX02S01I                          
+015600           GO TO 940-SEND-S01-MAP.                                
+015700                                                                  
+015800     IF EIBAID IS EQUAL TO DFHPF1                                 
+015900        IF PF1-SCREEN-WS90                                        
+016000*          MOVE LOW-VALUES  TO  OC02S01I                          
+016100           MOVE LOW-VALUES  TO  MX02S01I                          
+016200           GO TO 940-SEND-S01-MAP.                                
+016300                                                                  
+016400     IF EIBAID IS EQUAL TO DFHENTER                               
+016500        GO TO 020-CHECK-EIBCALEN.                                 
+016600                                                                  
+016700     IF EIBAID IS EQUAL TO DFHPA1 OR DFHPA2 OR DFHPA3             
+016800        MOVE CURSOR-WS10 TO S01-OPTION-L                          
+016900        MOVE INVALID-PF-PA-KEY-WS70 TO S01-MSG-AREA-I             
+017000        GO TO 945-SEND-EDIT-S01-MAP.                              
+017100                                                                  
+017200     GO TO 900-INVALID-PF-KEY.                                    
+017300 EJECT                                                            
+017400 020-CHECK-EIBCALEN.                                              
+017500                                                                  
+017600     IF OC01S01-SCREEN-WS90                                       
+017700*       MOVE LOW-VALUES  TO  OC02S01I                             
+017800        MOVE LOW-VALUES  TO  MX02S01I                             
+017900        GO TO 940-SEND-S01-MAP.                                   
+018000                                                                  
+018100     IF PF1-SCREEN-WS90                                           
+018200        AND ADD-RSTR-WS90                                         
+018300        MOVE LOW-VALUES  TO  MX02S01I                             
+018400        GO TO 940-SEND-S01-MAP.                                   
+018500                                                                  
+018600     IF OC02S01-SCREEN-WS90                                       
+018700        GO TO 100-RECEIVE-AND-EDIT-MAP.                           
+018800                                                                  
+018900     GO TO 905-GENERAL-ERROR.                                     
+019000 EJECT                                                            
+019100 100-RECEIVE-AND-EDIT-MAP.                                        
+019200** CHANGED CICS MAP OLD MAP NAME = 'OC02S01'                      
+019300** CHANGED CICS MAPSET OLD MAPSET NAME = 'OC02MAP'                
+019400     EXEC CICS RECEIVE MAP ('MX02S01')                            
+019500               MAPSET('MX02MAP')                                  
+019600               END-EXEC.                                          
+019700                                                                  
+019800*****IF S01-OPTION-I IS EQUAL TO 1                                
+019900******* IF ADD-RSTR-WS90                                          
+020000******* MOVE COMMAREA-LENGTH-WS80 TO EIBCALEN-WS80                
+020100******* MOVE 'MV7224  ' TO PROGRAM-WS10                           
+020200******* GO TO 800-XCTL.                                           
+020300                                                                  
+020400     IF S01-OPTION-I IS EQUAL TO 1                                
+020500        MOVE COMMAREA-LENGTH-WS80 TO EIBCALEN-WS80                
+020600*       MOVE 'OPC00003' TO PROGRAM-WS10                           
+020700        MOVE 'MV7221  ' TO PROGRAM-WS10                           
+020800        GO TO 800-XCTL.                                           
+020900                                                                  
+021000     IF S01-OPTION-I IS EQUAL TO 2                                
+021100        MOVE COMMAREA-LENGTH-WS80 TO EIBCALEN-WS80                
+021200*       MOVE 'OPC00004' TO PROGRAM-WS10                           
+021300        MOVE 'MV7222  ' TO PROGRAM-WS10                           
+021400        GO TO 800-XCTL.                                           
+021500                                                                  
+021600     IF S01-OPTION-I IS EQUAL TO 3                                
+021700        MOVE COMMAREA-LENGTH-WS80 TO EIBCALEN-WS80                
+021800*       MOVE 'OPC00005' TO PROGRAM-WS10                           
+021900        MOVE 'MV7223  ' TO PROGRAM-WS10                           
+022000        GO TO 800-XCTL.                                           
+022100                                                                  
+022200     IF S01-OPTION-I IS EQUAL TO 4                                
+011400         MOVE CA-ANALYST-ID-WS90 TO MW7220-ID                     
+011500         MOVE CA-PSWD-WS90       TO MW7220-PW                     
+022300         IF S01-LIC-NO-I > SPACES                                 
+022400             MOVE S01-LIC-NO-I TO MW7220-LIC-NO                   
+022500             EXEC CICS LINK                                       
+022600               PROGRAM  ('MW7220')                                
+022700               COMMAREA (MW7220-COMMAREA)                         
+022800               LENGTH   (LENGTH OF MW7220-COMMAREA)               
+022900             END-EXEC                                             
+023000             MOVE MW7220-RET-MSG     TO S01-MSG-AREA-O            
+023100             MOVE CURSOR-WS10        TO S01-OPTION-L              
+023200         ELSE                                                     
+023300             MOVE CURSOR-WS10        TO S01-LIC-NO-L              
+023400             MOVE FA-UNPROT-BRT-FSET TO S01-LIC-NO-F              
+023500             MOVE INCORRECT-LIC-NO   TO S01-MSG-AREA-O            
+023600         END-IF                                                   
+023700         MOVE FA-PROT-BRT TO S01-MSG-AREA-F                       
+023800         GO TO 945-SEND-EDIT-S01-MAP.                             
+023900                                                                  
+024000     MOVE CURSOR-WS10 TO S01-OPTION-L.                            
+024100     MOVE FA-UNPROT-NUM-BRT-FSET TO S01-OPTION-F.                 
+024200     MOVE INCORRECT-INFO-WS70 TO S01-MSG-AREA-I.                  
+024300     GO TO 945-SEND-EDIT-S01-MAP.                                 
+024400 EJECT                                                            
+024500 800-XCTL.                                                        
+024600     EXEC CICS XCTL PROGRAM(PROGRAM-WS10)                         
+024700               COMMAREA(WS90-COMMAREA)                            
+024800               LENGTH(EIBCALEN-WS80)                              
+024900               END-EXEC.                                          
+025000 EJECT                                                            
+025100 900-INVALID-PF-KEY.                                              
+025200** CHANGED CICS MAP OLD MAP NAME = 'OC02S01'                      
+025300** CHANGED CICS MAPSET OLD MAPSET NAME = 'OC02MAP'                
+025400     EXEC CICS RECEIVE MAP ('MX02S01')                            
+025500               MAPSET('MX02MAP')                                  
+025600               END-EXEC                                           
+025700                                                                  
+025800*    MOVE LOW-VALUES  TO  OC02S01I.                               
+025900     MOVE LOW-VALUES  TO  MX02S01I.                               
+026000     MOVE INVALID-PF-PA-KEY-WS70 TO S01-MSG-AREA-I.               
+026100     GO TO 940-SEND-S01-MAP.                                      
+026200                                                                  
+026300 EJECT                                                            
+026400 903-PGMIDERR.                                                    
+026500     MOVE PGMIDERR-WS70 TO OUT-ERR-MSG-WS70.                      
+026600     GO TO 930-SEND-ERR-MSG.                                      
+026700                                                                  
+026800                                                                  
+026900 904-LENGERR.                                                     
+027000     MOVE LENGTH-ERROR-WS70 TO OUT-ERR-MSG-WS70.                  
+027100     GO TO 930-SEND-ERR-MSG.                                      
+027200                                                                  
+027300                                                                  
+027400 905-GENERAL-ERROR.                                               
+027500     MOVE GENERAL-ERROR-WS70 TO OUT-ERR-MSG-WS70.                 
+027600     GO TO 930-SEND-ERR-MSG.                                      
+027700 EJECT                                                            
+027800 920-EXIT-BY-CLEAR.                                               
+027900     MOVE LOW-VALUES TO OUT-ERR-MSG-WS70.                         
+028000     GO TO 930-SEND-ERR-MSG.                                      
+028100                                                                  
+028200                                                                  
+028300                                                                  
+028400 930-SEND-ERR-MSG.                                                
+028500     EXEC CICS SEND FROM (OUT-MSG-WS70)                           
+028600               LENGTH(ERROR-MSG-LENGTH-WS80)                      
+028700               ERASE                                              
+028800               END-EXEC.                                          
+028900     GO TO 999-RETURN.                                            
+029000 EJECT                                                            
+029100 940-SEND-S01-MAP.                                                
+029200*    MOVE 'OC02S01' TO CA-SCREEN-NO-WS90.                         
+029300     MOVE 'MX02S01' TO CA-SCREEN-NO-WS90.                         
+029400                                                                  
+029500** CHANGED CICS MAP OLD MAP NAME = 'OC02S01'                      
+029600** CHANGED CICS MAPSET OLD MAPSET NAME = 'OC02MAP'                
+029700     EXEC CICS SEND MAP('MX02S01')                                
+029800               MAPSET('MX02MAP')                                  
+029900               ERASE                                              
+030000               END-EXEC.                                          
+030100                                                                  
+030200     GO TO 998-RETURN-TRANSID.                                    
+030300                                                                  
+030400                                                                  
+030500 945-SEND-EDIT-S01-MAP.                                           
+030600*    MOVE 'OC02S01' TO CA-SCREEN-NO-WS90.                         
+030700     MOVE 'MX02S01' TO CA-SCREEN-NO-WS90.                         
+030800                                                                  
+030900** CHANGED CICS MAP OLD MAP NAME = 'OC02S01'                      
+031000** CHANGED CICS MAPSET OLD MAPSET NAME = 'OC02MAP'                
+031100     EXEC CICS SEND MAP('MX02S01')                                
+031200               MAPSET('MX02MAP')                                  
+031300               CURSOR                                             
+031400               END-EXEC.                                          
+031500                                                                  
+031600     GO TO 998-RETURN-TRANSID.                                    
+031700 EJECT                                                            
+031800 998-RETURN-TRANSID.                                              
+031900*    EXEC CICS RETURN TRANSID('OC02')                             
+032000     EXEC CICS RETURN TRANSID('MX02')                             
+032100               COMMAREA(WS90-COMMAREA)                            
+032200               LENGTH(COMMAREA-LENGTH-WS80)                       
+032300               END-EXEC.                                          
+032400     GOBACK.                                                      
+032500                                                                  
+032600                                                                  
+032700                                                                  
+032800 999-RETURN.                                                      
+032900     EXEC CICS RETURN                                             
+033000               END-EXEC.                                          
+033100     GOBACK.                                                      
+033200 EJECT                                                            
+

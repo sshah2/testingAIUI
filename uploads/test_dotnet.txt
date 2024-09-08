@@ -1,0 +1,36 @@
+using System;
+
+namespace SampleApplication
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine("Hello, World!");
+            PerformCalculation();
+            var result = AddNumbers(5, 3);
+            Console.WriteLine($"The sum is: {result}");
+        }
+
+        static void PerformCalculation()
+        {
+            Console.WriteLine("Performing calculation...");
+            // Simulate some processing
+            for (int i = 0; i < 5; i++)
+            {
+                Console.WriteLine($"Processing {i + 1}/5");
+            }
+        }
+
+        static int AddNumbers(int a, int b)
+        {
+            int sum = a + b;
+            return sum;
+        }
+
+        static void DisplayMessage(string message)
+        {
+            Console.WriteLine(message);
+        }
+    }
+}
