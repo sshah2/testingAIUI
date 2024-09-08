@@ -1,0 +1,12 @@
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore environment variable files
+.env
+
+# Ignore specific files with sensitive information
+GenericCaseMgmt-v1.py
+GenericCaseMgmt.py
+ParseDocForDMVGenAI - v2.py
+Structured Contact Log.pyk
