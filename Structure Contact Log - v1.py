@@ -3,9 +3,14 @@ import streamlit as st
 import json
 from datetime import date, datetime
 import os
+from dotenv import load_dotenv
 
-# Load API key from environment variable
-openai.api_key = "***REMOVED***"
+# Load environment variables from .env file
+load_dotenv()
+
+# Access the OpenAI API key
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 # Textual month, day and year
 todays_date = date.today().strftime("%B %d, %Y")
