@@ -34,22 +34,11 @@ tab1, tab2 = st.tabs(["Unstructured Contact Note", "Screening Narrative"])
 
 # Main application logic
 def main():
-    # Initialize session state for messages early in the main function
-    #if "messages" not in st.session_state:
-    #    st.session_state["messages"] = []
-    #if "screening_narrative" not in st.session_state:
-    #    st.session_state["screening_narrative"] = ""
 
     setup_sidebar()
 
-    # Display chat messages in the first tab
-    # display_chat_messages()
-
-    # Chat input in the main body for Unstructured Contact Note in the first tab
-    #prompt = st.chat_input("Enter unstructured contact notes:")
-    #if prompt:
+    # Unstructured notes input in the Notes tab (second tab)
     with tab1:
-        #analyzed_data = process_chat_input(prompt)
         notes_prompt = st.text_area("Enter the unstructured contact notes:", height=300)
         if st.button("Process Notes"):
             analyzed_data = process_chat_input(notes_prompt)
@@ -76,17 +65,8 @@ def setup_sidebar():
         #text = "This interface allows you to convert unstructured to structured contact notes:"
         #st.markdown(text)
 
-#def display_chat_messages():
-#    for msg in st.session_state.messages:
-#        if msg["content"]:
-#            role_message = msg["role"]
-#            if role_message != "system":
-#                with tab1:
-#                    st.chat_message(msg["role"]).write(msg["content"])
-
 def process_chat_input(prompt):
     with tab1:
-        # st.chat_message("user").write(prompt)
 
         known_focus_children = [
             {"name": "John Doe", "Folio Name": "12345", "Validated Person Name": "John Doe", "Role": "Focus Child"},
@@ -145,7 +125,7 @@ def process_contact_notes(text, known_focus_children, known_participants):
 
 def analyze_contact_notes_with_gpt4(text, known_focus_children, known_participants):
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system",
@@ -156,7 +136,7 @@ def analyze_contact_notes_with_gpt4(text, known_focus_children, known_participan
             max_tokens=1500,
         )
 
-        response_text = response['choices'][0]['message']['content']
+        response_text = response.choices[0].message.content
         response_text = response_text.strip().strip('```')
 
         if not response_text.startswith("{") or not response_text.endswith("}"):
@@ -173,7 +153,7 @@ def analyze_contact_notes_with_gpt4(text, known_focus_children, known_participan
 
 def process_screening_narrative(narrative):
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system",
@@ -184,7 +164,7 @@ def process_screening_narrative(narrative):
             max_tokens=1500,
         )
 
-        response_text = response['choices'][0]['message']['content']
+        response_text = response.choices[0].message.content
         response_text = response_text.strip().strip('```')
 
         if not response_text.startswith("{") or not response_text.endswith("}"):
