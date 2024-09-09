@@ -5,12 +5,24 @@ from datetime import date, datetime
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file if running locally
+# Try to load the OpenAI API key from Streamlit Secrets (used in Streamlit Cloud)
+try:
+    openai_api_key = st.secrets["OPENAI_API_KEY"]
+except FileNotFoundError:
+    # If secrets.toml is not found (local development), use the .env file
+    load_dotenv()
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+except Exception as e:
+    # Catch any other errors (e.g., missing key in secrets)
+    st.error(f"Error loading API key: {e}")
 
-# Access the OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Check if the API key is available, raise an error if not found
+if not openai_api_key:
+    raise ValueError("OpenAI API key not found in either .env file or Streamlit Secrets.")
 
+# Set the OpenAI API key
+openai.api_key = openai_api_key
 
 # Textual month, day and year
 todays_date = date.today().strftime("%B %d, %Y")
